@@ -1,0 +1,72 @@
+/* Estilización del control de búsqueda de leaflet-geosearch para alinearlo
+ * con el branding de inmogrid (amarillo + esquinas redondeadas + sombra
+ * suave). Las clases .leaflet-control-geosearch vienen de la librería.
+ */
+
+.leaflet-control-geosearch.bar {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  min-width: 260px;
+  max-width: 420px;
+}
+
+.leaflet-control-geosearch.bar form {
+  padding: 4px;
+}
+
+.leaflet-control-geosearch.bar form input {
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  padding: 8px 36px 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.leaflet-control-geosearch.bar form input:focus {
+  outline: none;
+  border-color: #eab308;
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.25);
+}
+
+.leaflet-control-geosearch.bar form button.reset {
+  top: 4px;
+  right: 6px;
+  border-radius: 6px;
+  color: #6b7280;
+}
+
+.leaflet-control-geosearch .results {
+  margin-top: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.leaflet-control-geosearch .results > * {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.leaflet-control-geosearch .results > *:last-child {
+  border-bottom: none;
+}
+
+.leaflet-control-geosearch .results > *.active,
+.leaflet-control-geosearch .results > *:hover {
+  background: #fefce8; /* yellow-50 */
+  color: #713f12; /* yellow-900 */
+  cursor: pointer;
+}
+
+/* El botón-lupa que abre el searchbar en modo iconOnly (no usado acá, dejado
+ * por si se cambia a `style: 'button'`) */
+.leaflet-control-geosearch a.leaflet-bar-part {
+  border-radius: 6px;
+}

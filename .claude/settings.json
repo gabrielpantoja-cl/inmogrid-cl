@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo rm *)",
+      "Bash(sudo dd *)",
+      "Bash(sudo mkfs*)",
+      "Bash(git config --global *)",
+      "Bash(git push --force origin main)",
+      "Bash(git push -f origin main)",
+      "Bash(git reset --hard origin/main)",
+      "Read(.env)",
+      "Read(.env.production)",
+      "Read(.env.development.local)",
+      "Read(./.ssh/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Edit(.git/config)",
+      "Edit(.git/hooks/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(echo \"$TOOL_INPUT\" | jq -r '.command // \"\"' 2>/dev/null || echo \"\"); case \"$COMMAND\" in git\\ commit*) FOUND=$(grep -rl --include='*.ts' --include='*.tsx' --include='*.js' 'PGPASSWORD\\|client_secret\\|privateKey\\|sk-live\\|AIzaSy' src/ 2>/dev/null); if [ -n \"$FOUND\" ]; then echo \"Hardcoded secrets detected in: $FOUND\"; exit 2; fi ;; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

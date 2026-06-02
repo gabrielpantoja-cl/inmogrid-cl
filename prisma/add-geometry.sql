@@ -1,0 +1,1 @@
+ALTER TABLE "referenciales" ADD COLUMN IF NOT EXISTS "geom" geometry(Point, 4326);

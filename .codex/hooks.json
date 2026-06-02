@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(echo \"$TOOL_INPUT\" | jq -r '.command // \"\"' 2>/dev/null || echo \"\"); case \"$COMMAND\" in git\\ commit*) FOUND=$(grep -rl --include='*.ts' --include='*.tsx' --include='*.js' 'PGPASSWORD\\|client_secret\\|privateKey\\|sk-live\\|AIzaSy' src/ 2>/dev/null); if [ -n \"$FOUND\" ]; then echo \"Hardcoded secrets detected in: $FOUND\"; exit 2; fi ;; esac",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

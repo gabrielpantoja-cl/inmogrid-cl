@@ -1,0 +1,21 @@
+# Archivos de configuración
+*.config.js
+*.config.cjs
+*.config.mjs
+babel.config.js
+babel.config.cjs
+postcss.config.js
+postcss.config.cjs
+
+# Directorios de build y cache
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.cache/
+
+# Otros archivos
+.eslintrc.js
+.prettierrc.js
+next-env.d.ts

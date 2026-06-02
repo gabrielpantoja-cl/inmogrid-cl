@@ -1,0 +1,139 @@
+/* Estilos personalizados para syntax highlighting de código */
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1rem;
+  background: #1f2937;
+  color: #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+/* Comentarios */
+.hljs-comment,
+.hljs-quote {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Keywords */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #c084fc;
+  font-weight: bold;
+}
+
+/* Números y literales */
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: #60a5fa;
+}
+
+/* Strings */
+.hljs-string,
+.hljs-doctag {
+  color: #34d399;
+}
+
+/* Títulos y secciones */
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+/* Tipos y clases */
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #f59e0b;
+}
+
+/* Tags HTML */
+.hljs-tag,
+.hljs-name,
+.hljs-attribute {
+  color: #8b5cf6;
+  font-weight: normal;
+}
+
+/* Regexp y links */
+.hljs-regexp,
+.hljs-link {
+  color: #10b981;
+}
+
+/* Símbolos */
+.hljs-symbol,
+.hljs-bullet {
+  color: #ec4899;
+}
+
+/* Built-in functions */
+.hljs-built_in,
+.hljs-builtin-name {
+  color: #06b6d4;
+}
+
+/* Meta información */
+.hljs-meta {
+  color: #64748b;
+}
+
+/* Deletions (diff) */
+.hljs-deletion {
+  background: #fecaca;
+}
+
+/* Additions (diff) */
+.hljs-addition {
+  background: #bbf7d0;
+}
+
+/* Énfasis */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* Fuerte */
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* Funciones */
+.hljs-function {
+  color: #fbbf24;
+}
+
+/* Parámetros */
+.hljs-params {
+  color: #e5e7eb;
+}
+
+/* Atributos */
+.hljs-attr {
+  color: #60a5fa;
+}
+
+/* Selectores CSS */
+.hljs-selector-class {
+  color: #fbbf24;
+}
+
+.hljs-selector-pseudo {
+  color: #c084fc;
+}
+
+/* Operadores */
+.hljs-operator {
+  color: #c084fc;
+}
+
+/* Propiedades CSS */
+.hljs-property {
+  color: #60a5fa;
+}

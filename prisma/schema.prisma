@@ -1,0 +1,573 @@
+generator client {
+  provider      = "prisma-client-js"
+  // Incluimos `rhel-openssl-3.0.x` además de `native` porque desde que movimos
+  // el build a GitHub Actions (runner `ubuntu-latest` = Debian/Ubuntu), el
+  // `prisma generate` ya no corre en la misma plataforma que el runtime
+  // serverless de Vercel (Amazon Linux 2023 = RHEL con OpenSSL 3.0). Sin este
+  // binaryTarget, el Prisma Client se genera solo con el engine de Debian y
+  // Lambda tira `PrismaClientInitializationError` al instanciar el cliente,
+  // lo que rompe cualquier ruta que toque la DB — incluido `/api/public/posts`
+  // y hasta archivos estáticos como `/ads.txt` que pasan por el middleware.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// SUPABASE AUTH PATTERN
+// id references auth.users.id (UUID managed by Supabase Auth)
+// No NextAuth models (Account, Session, VerificationToken, User)
+// ============================================================
+
+model Profile {
+  id              String          @id @db.Uuid
+  username        String?         @unique
+  fullName        String?         @map("full_name")
+  avatarUrl       String?         @map("avatar_url")
+  bio             String?
+  profession      ProfessionType?
+  company         String?
+  phone           String?
+  /// Email de contacto público (opcional). Distinto del email de auth — permite que
+  /// el usuario muestre un email comercial sin exponer el de login.
+  contactEmail    String?         @map("contact_email")
+  region          String?
+  commune         String?
+  /// Dirección de oficina (opcional, texto libre). Si NULL no se muestra.
+  address         String?
+  website         String?
+  linkedin        String?
+  tagline         String?
+  coverImageUrl   String?         @map("cover_image_url")
+  location        String?
+  identityTags    String[]        @default([]) @map("identity_tags")
+  externalLinks   Json?           @map("external_links")
+  isPublicProfile Boolean         @default(true) @map("is_public_profile")
+  role            Role            @default(user)
+  email           String?
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  Post                            Post[]
+  AuditLog                        AuditLog[]
+  Event                           Event[]
+  ProfessionalProfile             ProfessionalProfile?
+  Connection_receiverIdToProfile  Connection[] @relation("Connection_receiverIdToProfile")
+  Connection_requesterIdToProfile Connection[] @relation("Connection_requesterIdToProfile")
+  ForumThread                     ForumThread[]
+  ForumComment                    ForumComment[]
+  ForumThreadLike                 ForumThreadLike[]
+  ForumThreadBookmark             ForumThreadBookmark[]
+  ReportedItems                   ForumReport[] @relation("forum_reports_reporter")
+  ReviewedReports                 ForumReport[] @relation("forum_reports_reviewer")
+  ReceivedNotifications           ForumNotification[] @relation("forum_notifications_recipient")
+  SentNotifications               ForumNotification[] @relation("forum_notifications_actor")
+
+  @@map("profiles")
+}
+
+// ============================================================
+// COMMUNITY & NETWORKING
+// ============================================================
+
+model Connection {
+  id          String           @id @default(cuid())
+  requesterId String           @db.Uuid @map("requester_id")
+  receiverId  String           @db.Uuid @map("receiver_id")
+  status      ConnectionStatus @default(pending)
+  message     String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  requester   Profile          @relation("Connection_requesterIdToProfile", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver    Profile          @relation("Connection_receiverIdToProfile", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+  @@index([receiverId, status])
+  @@index([requesterId, status])
+  @@map("connections")
+}
+
+// ============================================================
+// CONTENT
+// ============================================================
+
+model Post {
+  id            String    @id @default(cuid())
+  userId        String    @db.Uuid @map("user_id")
+  title         String
+  slug          String    @unique
+  content       String
+  excerpt       String?
+  coverImageUrl String?   @map("cover_image_url")
+  published     Boolean   @default(false)
+  publishedAt   DateTime? @map("published_at")
+  tags          String[]  @default([])
+  readTime      Int?      @map("read_time")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  author        Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([userId, published])
+  @@map("posts")
+}
+
+// ============================================================
+// FORUM (Reddit-style threads + comments)
+// Public read, authenticated write. HTML sanitized server-side.
+// ============================================================
+
+model ForumThread {
+  id           String                 @id @default(cuid())
+  authorId     String                 @db.Uuid @map("author_id")
+  title        String
+  slug         String                 @unique
+  contentHtml  String                 @map("content_html")
+  contentText  String                 @map("content_text")
+  tags         String[]               @default([])
+  status       ThreadStatus           @default(published)
+  commentCount Int                    @default(0) @map("comment_count")
+  likeCount    Int                    @default(0) @map("like_count")
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+  // editedAt se setea explícito al hacer PATCH del contenido (title/body/tags).
+  // A diferencia de updatedAt (que Prisma toca en cada update, incluyendo
+  // increments de counters de likes/comments), editedAt refleja ediciones del
+  // propietario y es lo que mostramos en UI como "editado".
+  editedAt     DateTime?              @map("edited_at")
+  author       Profile                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments     ForumComment[]
+  likes        ForumThreadLike[]
+  bookmarks    ForumThreadBookmark[]
+  notifications ForumNotification[]
+
+  @@index([status, createdAt])
+  @@index([slug])
+  @@map("threads")
+}
+
+model ForumComment {
+  id          String      @id @default(cuid())
+  threadId    String      @map("thread_id")
+  authorId    String      @db.Uuid @map("author_id")
+  contentHtml String      @map("content_html")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  editedAt    DateTime?   @map("edited_at")
+  // parentId — null = comentario top-level; si apunta a otro comentario es
+  // una respuesta (reply). El árbol se limita a 3 niveles en la UI para
+  // mantener legibilidad en mobile. SetNull al borrar el padre: los hijos
+  // quedan huérfanos pero visibles, con etiqueta "respuesta original
+  // eliminada" en el cliente.
+  parentId    String?     @map("parent_id")
+  thread      ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author      Profile     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent      ForumComment? @relation("ForumCommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies     ForumComment[] @relation("ForumCommentReplies")
+  notifications ForumNotification[]
+
+  @@index([threadId, createdAt])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model ForumThreadLike {
+  userId    String      @db.Uuid @map("user_id")
+  threadId  String      @map("thread_id")
+  createdAt DateTime    @default(now()) @map("created_at")
+  user      Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([userId, threadId])
+  @@index([threadId])
+  @@map("thread_likes")
+}
+
+model ForumThreadBookmark {
+  userId    String      @db.Uuid @map("user_id")
+  threadId  String      @map("thread_id")
+  createdAt DateTime    @default(now()) @map("created_at")
+  user      Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([userId, threadId])
+  @@index([userId])
+  @@map("thread_bookmarks")
+}
+
+// Notificaciones del foro. Una por cada evento que requiere avisar a un
+// usuario: menciones, replies a sus comments, comments en sus threads.
+// El feed se muestra en un dropdown en el header. Se marcan read al
+// abrirlas (o masivo con "marcar todo como leído").
+enum ForumNotificationType {
+  mention        // Alguien te mencionó con @username
+  reply          // Alguien respondió a tu comentario
+  comment_on_thread  // Alguien comentó en tu hilo
+}
+
+model ForumNotification {
+  id          String                @id @default(cuid())
+  // Destinatario — quién recibe la notificación.
+  recipientId String                @db.Uuid @map("recipient_id")
+  // Actor — quién disparó el evento. Puede ser null si el actor fue borrado.
+  actorId     String?               @db.Uuid @map("actor_id")
+  type        ForumNotificationType
+  // Thread siempre presente (todo evento ocurre dentro de un hilo).
+  threadId    String                @map("thread_id")
+  // Comment — presente en mention/reply/comment_on_thread cuando el evento
+  // fue sobre un comment específico. Null si la mención fue en el body del
+  // thread mismo.
+  commentId   String?               @map("comment_id")
+  readAt      DateTime?             @map("read_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  recipient   Profile               @relation("forum_notifications_recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       Profile?              @relation("forum_notifications_actor", fields: [actorId], references: [id], onDelete: SetNull)
+  thread      ForumThread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  comment     ForumComment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@map("forum_notifications")
+}
+
+// Reportes de contenido del foro (hilos o comentarios). El moderador los
+// revisa y puede ocultar el contenido o sancionar al autor. Un usuario
+// puede reportar un mismo target solo una vez — la PK compuesta lo fuerza.
+enum ForumReportReason {
+  spam
+  offensive
+  misleading
+  illegal
+  other
+}
+
+enum ForumReportTargetType {
+  thread
+  comment
+}
+
+enum ForumReportStatus {
+  pending
+  reviewed
+  dismissed
+  actioned
+}
+
+model ForumReport {
+  id          String                @id @default(cuid())
+  reporterId  String                @db.Uuid @map("reporter_id")
+  targetType  ForumReportTargetType @map("target_type")
+  targetId    String                @map("target_id")
+  reason      ForumReportReason
+  details     String?
+  status      ForumReportStatus     @default(pending)
+  createdAt   DateTime              @default(now()) @map("created_at")
+  reviewedAt  DateTime?             @map("reviewed_at")
+  reviewerId  String?               @db.Uuid @map("reviewer_id")
+  reporter    Profile               @relation("forum_reports_reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer    Profile?              @relation("forum_reports_reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@map("forum_reports")
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+model Event {
+  id              String        @id @default(cuid())
+  title           String
+  description     String
+  organizerName   String        @map("organizer_name")
+  organizerType   OrganizerType @map("organizer_type")
+  eventType       EventType     @map("event_type")
+  startDate       DateTime      @map("start_date")
+  endDate         DateTime?     @map("end_date")
+  location        String?
+  isOnline        Boolean       @default(false) @map("is_online")
+  onlineUrl       String?       @map("online_url")
+  coverImageUrl   String?       @map("cover_image_url")
+  registrationUrl String?       @map("registration_url")
+  isFree          Boolean       @default(true) @map("is_free")
+  isCommercial    Boolean       @default(false) @map("is_commercial")
+  isPaid          Boolean       @default(false) @map("is_paid")
+  price           Float?
+  status          EventStatus   @default(PENDING)
+  publishedAt     DateTime?     @map("published_at")
+  region          String?
+  commune         String?
+  userId          String?       @db.Uuid @map("user_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  author          Profile?      @relation(fields: [userId], references: [id])
+
+  @@index([status, startDate])
+  @@index([region, status])
+  @@index([isCommercial, status])
+  @@map("events")
+}
+
+// ============================================================
+// PROFESSIONAL DIRECTORY
+// ============================================================
+
+model ProfessionalProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique @db.Uuid @map("user_id")
+  specialty       String[]  @default([])
+  certifications  String[]  @default([])
+  regions         String[]  @default([])
+  yearsExperience Int?      @map("years_experience")
+  isVerified      Boolean   @default(false) @map("is_verified")
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  profile         Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_profiles")
+}
+
+// ============================================================
+// REFERENCIALES CONTRIBUTIONS (staging area)
+// Users submit data here; admins review; approved → pipeline to Neon
+// ============================================================
+
+model Contribution {
+  id               String            @id @default(cuid())
+  userId           String            @db.Uuid @map("user_id")
+  sourceId         String?           @map("source_id") // Neon referencial ID (for corrections/reports)
+  contributionType ContributionType  @default(new) @map("contribution_type")
+  lat              Float
+  lng              Float
+  fojas            String?
+  numero           Int?
+  anio             Int?
+  cbr              String?
+  predio           String?
+  comuna           String?
+  rol              String?
+  fechaescritura   DateTime?
+  superficieTerreno    Float?  @map("superficie_terreno")
+  superficieConstruida Float?  @map("superficie_construida")
+  /// Codigo SII de destino (1 letra). Diccionario en src/features/referenciales/lib/destino.ts
+  destino          String?
+  /// Monto en UF (cuando el aportante lo conoce). Coexiste con `monto` (CLP).
+  montoUf          Float?  @map("monto_uf")
+  monto            BigInt?
+  observaciones    String?
+  status           ContributionStatus @default(pending)
+  reviewerId       String?           @db.Uuid @map("reviewer_id")
+  reviewNote       String?           @map("review_note")
+  reviewedAt       DateTime?         @map("reviewed_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([sourceId])
+  @@index([comuna])
+  @@map("contributions")
+}
+
+// ============================================================
+// SOFIA RAG CHATBOT
+// ============================================================
+
+model SofiaDocument {
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  documentType String   @default("general") @map("document_type")
+  metadata     Json     @default("{}")
+  // embedding vector(768) managed via raw SQL — Prisma doesn't support vector type
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("sofia_documents")
+}
+
+model SofiaConversation {
+  id        String          @id @default(cuid())
+  userId    String?         @db.Uuid @map("user_id")
+  sessionId String?         @map("session_id")
+  title     String?
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  messages  SofiaMessage[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("sofia_conversations")
+}
+
+model SofiaMessage {
+  id             String            @id @default(cuid())
+  conversationId String            @map("conversation_id")
+  role           String
+  content        String
+  createdAt      DateTime          @default(now()) @map("created_at")
+  conversation   SofiaConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("sofia_messages")
+}
+
+// ============================================================
+// SYSTEM
+// ============================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid @map("user_id")
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  profile   Profile  @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  user
+  admin
+  superadmin
+}
+
+enum ProfessionType {
+  TASADOR_PERITO
+  PERITO_JUDICIAL
+  CORREDOR_PROPIEDADES
+  ADMINISTRADOR_PROP
+  ABOGADO_INMOBILIARIO
+  ARQUITECTO
+  INGENIERO_CIVIL
+  ACADEMICO
+  FUNCIONARIO_PUBLICO
+  INVERSIONISTA
+  PROPIETARIO
+  OTRO
+}
+
+enum ConnectionStatus {
+  pending
+  accepted
+  rejected
+  blocked
+}
+
+enum EventStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+  EXPIRED
+}
+
+enum EventType {
+  TALLER
+  SEMINARIO
+  CHARLA
+  CURSO
+  OPEN_HOUSE
+  LANZAMIENTO
+}
+
+enum OrganizerType {
+  MUNICIPAL
+  UNIVERSITARIO
+  GREMIAL
+  COMERCIAL
+}
+
+enum ContributionType {
+  new
+  correction
+  report
+}
+
+enum ThreadStatus {
+  published
+  hidden
+}
+
+enum ContributionStatus {
+  pending
+  approved
+  rejected
+}
+
+// ─── Gamification ────────────────────────────────────────────
+
+enum BadgeCategory {
+  CONTENT
+  DATA
+  COMMUNITY
+  SPECIAL
+}
+
+enum BadgeTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum PointReason {
+  POST_PUBLISHED
+  CONTRIBUTION_APPROVED
+  CORRECTION_APPROVED
+  BUG_REPORT
+  BADGE_EARNED
+  MANUAL_ADJUSTMENT
+}
+
+model InmogridBadge {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  name          String
+  description   String
+  iconUrl       String?       @map("icon_url")
+  category      BadgeCategory
+  tier          BadgeTier
+  threshold     Int           @default(1)
+  pointsAwarded Int           @default(0) @map("points_awarded")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  userBadges InmogridUserBadge[]
+
+  @@map("badges")
+}
+
+model InmogridUserBadge {
+  id       String   @id @default(cuid())
+  userId   String   @db.Uuid @map("user_id")
+  badgeId  String   @map("badge_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  badge InmogridBadge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+model InmogridPointsLedger {
+  id          String      @id @default(cuid())
+  userId      String      @db.Uuid @map("user_id")
+  points      Int
+  reason      PointReason
+  referenceId String?     @map("reference_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("points_ledger")
+}

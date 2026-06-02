@@ -1,0 +1,40 @@
+-- =============================================================================
+-- Supabase — Cleanup definitivo de `contributions.superficie` (legacy)
+-- Fecha: 2026-04-29
+-- =============================================================================
+--
+-- Este script se aplica DESPUÉS de `2026-04-29-contribution-split-fields.sql`
+-- (que agrega las 4 columnas split). Si esa migración aún no se ejecutó, este
+-- archivo no rompe nada — pero el form de aportes ya no usaría `superficie`.
+--
+-- CONTEXTO
+-- --------
+-- Verificación 2026-04-29:
+--   SELECT COUNT(*) AS total, COUNT(superficie) AS con_legacy FROM contributions;
+--   → { total: 1, con_legacy: 0 }
+--
+-- No hay aportes de usuarios con valor en `superficie`. La columna queda
+-- huérfana — el form de aportes (B2/C1) y los endpoints contribute (C2)
+-- ya no la escriben. DROP COLUMN es seguro.
+--
+-- IDEMPOTENCIA
+-- ------------
+-- DROP COLUMN IF EXISTS — re-correr no rompe.
+--
+-- DESHACER
+-- --------
+--   ALTER TABLE contributions ADD COLUMN superficie DOUBLE PRECISION;
+--   -- (los datos no son recuperables; eran NULL en todos los aportes vivos
+--   --  al momento del DROP)
+-- =============================================================================
+
+ALTER TABLE contributions DROP COLUMN IF EXISTS superficie;
+
+-- =============================================================================
+-- VERIFICACIÓN POST-EJECUCIÓN
+-- =============================================================================
+--
+--   SELECT column_name FROM information_schema.columns
+--   WHERE table_name = 'contributions' AND column_name = 'superficie';
+--   -- Debe devolver 0 filas.
+-- =============================================================================

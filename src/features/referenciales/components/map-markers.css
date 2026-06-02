@@ -1,0 +1,153 @@
+/* inmogrid referenciales — marker styling
+ * Paleta: amarillos de branding. Alineado con tailwind yellow-400/500/600 + amber-500.
+ * Las clases .inmg-* son inyectadas vía L.divIcon, por eso viven en CSS plano
+ * (no Tailwind tree-shakeable desde strings de template).
+ */
+
+/* ===== Individual pin ===== */
+
+.inmg-pin {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: block;
+  cursor: pointer;
+  transform-origin: center;
+  transition: transform 150ms ease-out;
+}
+
+.inmg-pin:hover {
+  transform: scale(1.18);
+  z-index: 10;
+}
+
+.inmg-pin-halo {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: rgba(234, 179, 8, 0.18); /* yellow-500 @ 18% */
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.08);
+}
+
+.inmg-pin-dot {
+  position: absolute;
+  inset: 6px;
+  border-radius: 9999px;
+  background: #facc15; /* yellow-400 */
+  box-shadow:
+    0 0 0 2px #ca8a04, /* yellow-600 outer ring */
+    0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Cluster ===== */
+
+.inmg-cluster {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transform-origin: center;
+  transition: transform 150ms ease-out;
+}
+
+.inmg-cluster:hover {
+  transform: scale(1.08);
+  z-index: 10;
+}
+
+.inmg-cluster-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.22); /* amber-500 @ 22% */
+  animation: inmgClusterPulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.inmg-cluster-ring--delayed {
+  animation-delay: 1s;
+}
+
+.inmg-cluster-body {
+  position: relative;
+  width: 68%;
+  height: 68%;
+  border-radius: 9999px;
+  background: #f59e0b; /* amber-500 */
+  box-shadow:
+    0 0 0 2px #b45309, /* amber-700 ring */
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+/* Tamaños grandes agrandan ligeramente el texto */
+.inmg-cluster--lg .inmg-cluster-body {
+  font-size: 14px;
+}
+
+.inmg-cluster--xl .inmg-cluster-body {
+  font-size: 15px;
+}
+
+@keyframes inmgClusterPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.65;
+  }
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+/* ===== Spiderfy ===== */
+
+/* Leg = línea punteada desde el centro del cluster al pin */
+.leaflet-spider-leg {
+  stroke: #ca8a04; /* yellow-600 */
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* Pin spiderficado = pin normal pero con animación de entrada */
+.inmg-pin--spider {
+  animation: inmgSpiderPop 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes inmgSpiderPop {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Respeta preferencia del usuario por movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .inmg-cluster-ring,
+  .inmg-pin--spider {
+    animation: none;
+  }
+  .inmg-pin,
+  .inmg-cluster {
+    transition: none;
+  }
+}

@@ -1,0 +1,384 @@
+/* globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Design tokens — inmogrid.cl
+ *
+ * Formato: RGB triples sin comas (ej. "239 184 16" para #EFB810).
+ * Razón: Tailwind los consume como `rgb(var(--X) / <alpha-value>)`, lo que
+ * permite usar alpha modifiers estándar como `bg-primary/20`.
+ *
+ * ÚNICA fuente de verdad. `tailwind.config.ts` solo referencia estas vars —
+ * no redefine valores. Cambiar un color aquí propaga a TODO el sistema.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Marca */
+  --primary:              239 184 16;   /* #EFB810 — amarillo mostaza */
+  --primary-foreground:   0 0 0;        /* #000000 — texto sobre primary */
+  --secondary:            255 203 43;   /* #FFCB2B — amarillo brillante */
+  --secondary-foreground: 0 0 0;
+
+  /* Superficies */
+  --background:           248 242 232;  /* #F8F2E8 — off-white cálido */
+  --foreground:           66 66 66;     /* #424242 — texto base */
+  --card:                 255 255 255;  /* #FFFFFF */
+  --card-foreground:      66 66 66;
+  --popover:              255 255 255;
+  --popover-foreground:   66 66 66;
+
+  /* Tokens auxiliares */
+  --muted:                255 229 173;  /* #FFE5AD — beige claro */
+  --muted-foreground:     115 115 115;  /* #737373 */
+  --accent:               255 229 173;
+  --accent-foreground:    66 66 66;
+  --destructive:          239 68 68;    /* #EF4444 */
+  --destructive-foreground: 254 242 242; /* #FEF2F2 */
+  --border:               255 229 173;
+  --input:                255 229 173;
+  --ring:                 239 184 16;
+
+  --radius: 0.5rem;
+
+  /* Espaciado navbar */
+  --navbar-height: 64px;
+
+  /* Z-index jerárquico */
+  --z-index-below: -1;
+  --z-index-default: 1;
+  --z-index-content: 100;
+  --z-index-controls: 300;
+  --z-index-popup: 400;
+  --z-index-overlay: 500;
+  --z-index-navbar: 900;
+  --z-index-drawer: 950;
+  --z-index-modal: 1000;
+  --z-index-dropdown: 1050;
+  --z-index-admin-modal: 2000;
+  --z-index-cookie-banner: 9999;
+  --z-index-cookie-modal: 10000;
+  --z-index-toast: 99999;
+}
+
+@media (max-width: 768px) {
+  :root { --navbar-height: 60px; }
+}
+@media (max-width: 640px) {
+  :root { --navbar-height: 56px; }
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  /* IMPORTANT: NO usar `overflow-x: hidden` aquí — rompe `position: sticky`
+     porque Chrome/Safari crean un nuevo scroll container y los elementos
+     sticky pierden el viewport como referencia. Si algún componente
+     desborda horizontalmente, encapsularlo en un wrapper específico con
+     `overflow-x: clip` (que no rompe sticky). */
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Defensa contra desborde horizontal sin romper sticky. `clip` se comporta
+     como `hidden` para overflow pero no establece nuevo scrolling context. */
+  overflow-x: clip;
+}
+
+/* Prevenir flash of unstyled content */
+body {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Espacio seguro para móviles */
+.mobile-safe-padding {
+  padding-top: max(env(safe-area-inset-top), 1rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/* Estilos para el contenedor principal */
+.main-container {
+  min-height: 100vh;
+  min-height: 100dvh; /* Soporte para altura dinámica en móviles */
+}
+
+/* Estilos específicos para Markdown */
+.markdown-content {
+  line-height: 1.8;
+  
+  & h1 {
+    @apply text-3xl font-bold mb-8 mt-6 text-gray-900;
+    line-height: 1.3;
+  }
+  
+  & h2 {
+    @apply text-2xl font-semibold mb-6 mt-8 text-gray-800;
+    line-height: 1.4;
+  }
+  
+  & h3 {
+    @apply text-xl font-medium mb-4 mt-6 text-gray-700;
+    line-height: 1.5;
+  }
+  
+  & p {
+    @apply text-gray-600 leading-relaxed;
+    margin: 1.5em 0;
+  }
+
+  & ul, & ol {
+    @apply text-gray-600;
+    margin: 1.5em 0;
+    padding-left: 1.5em;
+    line-height: 1.6;
+  }
+
+  & li {
+    margin: 0.5em 0;
+  }
+
+  & li > p {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+  }
+  
+  & blockquote {
+    @apply pl-4 py-3 my-6 border-l-4 border-primary bg-primary/5 rounded-r-lg;
+    line-height: 1.6;
+  }
+  
+  & table {
+    @apply w-full my-6 border-collapse;
+  }
+  
+  & th, & td {
+    @apply border border-gray-300 p-3;
+  }
+  
+  & th {
+    @apply bg-gray-100 font-semibold text-gray-900;
+  }
+  
+  & td {
+    @apply text-gray-600;
+  }
+  
+  & hr {
+    @apply my-8 border-t-2 border-gray-200;
+  }
+  
+  & a {
+    @apply text-primary hover:text-primary/80 underline transition-colors;
+  }
+
+  & code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800;
+  }
+
+  & pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4;
+  }
+}
+
+/* Timestamp comment style */
+.timestampComment {
+  @apply text-gray-500 italic;
+}
+
+/* Mejoras para inputs numéricos */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Estilos para file inputs */
+.file\:border-0::file-selector-button {
+  border-width: 0;
+}
+
+.file\:bg-transparent::file-selector-button {
+  background-color: transparent;
+}
+
+.file\:text-sm::file-selector-button {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.file\:font-medium::file-selector-button {
+  font-weight: 500;
+}
+
+/* Estilos específicos para Leaflet */
+.leaflet-container {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+}
+
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  display: block;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+/* Configuración para modales */
+body.dialog-open .leaflet-container,
+body.dialog-open [class^="leaflet-"] {
+  z-index: 0 !important;
+}
+
+#__next ~ div[role="dialog"] {
+  z-index: 9000;
+}
+
+/* Estilos para botones de carga */
+.loading-button {
+  @apply relative overflow-hidden;
+}
+
+.loading-button:disabled {
+  @apply cursor-not-allowed;
+}
+
+/* Estilos para animaciones de carga */
+.loading-spinner {
+  @apply inline-block animate-spin rounded-full border-2 border-solid border-current border-r-transparent;
+}
+
+/* Optimizaciones de rendimiento para imágenes */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Estilos para el componente Image de Next.js */
+.next-image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.next-image-container img {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Estilos para focus accesible */
+:focus-visible {
+  @apply outline-2 outline-primary outline-offset-2;
+}
+
+/* Modo oscuro — override de CSS vars. Tailwind las consume automáticamente
+ * vía `rgb(var(--X))`, así que cualquier clase como `bg-background` o
+ * `text-foreground` cambia sin tocar código del componente. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background:       26 22 16;    /* #1A1610 */
+    --foreground:       245 240 232; /* #F5F0E8 */
+    --card:             42 35 24;    /* #2A2318 */
+    --card-foreground:  245 240 232;
+  }
+}
+
+/* Utilidades personalizadas */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--background));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--secondary));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--primary));
+}
+
+/* Mejoras para la accesibilidad */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Animaciones suaves para elementos interactivos */
+.interactive-element {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.interactive-element:hover {
+  @apply transform -translate-y-0.5 shadow-lg;
+}
+
+/* Clases utilitarias adicionales */
+.glass-effect {
+  @apply bg-white/80 backdrop-blur-sm border border-white/20;
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, rgb(var(--primary)) 0%, rgb(var(--primary) / 0.7) 100%);
+}
+
+.shadow-primary {
+  box-shadow: 0 4px 20px rgb(var(--primary) / 0.15);
+}
+/* ============================================================
+   Foro — estilos compartidos
+   ============================================================ */
+
+/* Menciones @usuario linkificadas: destacadas en prose del foro. */
+.prose a.mention,
+a.mention {
+  color: rgb(var(--primary));
+  font-weight: 600;
+  text-decoration: none;
+}
+.prose a.mention:hover,
+a.mention:hover {
+  text-decoration: underline;
+}

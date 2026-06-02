@@ -1,0 +1,49 @@
+{
+  "_comment": "Plantilla portable de configuración MCP para inmogrid.cl. Cópiala como .mcp.json (gitignoreada) y ajusta según tu sistema operativo. Reemplaza los placeholders ${...} por tus propios valores o exporta las variables en tu shell.",
+
+  "mcpServers": {
+    "Neon": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
+    },
+
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github@latest"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--headless"]
+    },
+
+    "supabase": {
+      "_comment_os": "En Linux/macOS usa 'npx' directo. En Windows reemplaza command por 'cmd' y args por ['/c','npx','-y','@supabase/mcp-server-supabase@latest','--access-token','${SUPABASE_ACCESS_TOKEN}'].",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "${SUPABASE_ACCESS_TOKEN}"
+      ]
+    },
+
+    "ga4": {
+      "_comment_os": "Solo Windows: 'uvx' instalado vía WinGet. En Linux instala uvx (pipx install uv) y usa command: 'uvx', args: ['analytics-mcp']. Las credenciales GOOGLE_APPLICATION_CREDENTIALS deben apuntar a un archivo local válido en tu OS.",
+      "command": "uvx",
+      "args": ["analytics-mcp"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${GOOGLE_APPLICATION_CREDENTIALS}",
+        "GOOGLE_PROJECT_ID": "${GOOGLE_PROJECT_ID}"
+      }
+    }
+  }
+}

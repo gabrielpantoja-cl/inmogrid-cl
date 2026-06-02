@@ -1,0 +1,89 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "project": ["tsconfig.json", "tsconfig.seed.json"]
+  },
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:jsx-a11y/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript",
+    "plugin:boundaries/recommended"
+  ],
+  "plugins": [
+    "react",
+    "jsx-a11y",
+    "import",
+    "@typescript-eslint",
+    "boundaries"
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "import/no-unresolved": "error",
+    "import/prefer-default-export": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "warn",
+    "no-var": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "boundaries/element-types": [
+      "error",
+      {
+        "default": "allow",
+        "rules": [
+          {
+            "from": "feature",
+            "disallow": ["feature"],
+            "message": "Un feature no puede importar de otro feature. Si necesitan compartir código, súbelo a src/shared/. Ver docs/adr/ADR-001-feature-first-architecture.md"
+          },
+          {
+            "from": "shared",
+            "disallow": ["feature", "app"],
+            "message": "shared/ no puede depender de features/ ni de app/. Solo de otras partes de shared/ o librerías externas."
+          }
+        ]
+      }
+    ],
+    "boundaries/no-unknown": "off",
+    "boundaries/no-unknown-files": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    },
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      },
+      "node": {
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    },
+    "boundaries/elements": [
+      { "type": "feature", "pattern": "src/features/*", "mode": "folder" },
+      { "type": "shared", "pattern": "src/shared/*", "mode": "folder" },
+      { "type": "app", "pattern": "src/app/*", "mode": "folder" }
+    ],
+    "boundaries/ignore": [
+      "src/middleware.ts",
+      "src/config/**",
+      "src/types/**",
+      "__tests__/**"
+    ]
+  }
+}
