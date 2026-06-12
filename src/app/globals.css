@@ -382,3 +382,71 @@ a.mention {
 a.mention:hover {
   text-decoration: underline;
 }
+
+/* ============================================================
+   Impresión — informe de tasación
+   ============================================================ */
+@media print {
+  /* Ocultar navegación, footer, botones de acción y decoraciones */
+  header:not(.print-area header),
+  nav,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Forzar fondo blanco y texto negro para legibilidad */
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* El área del reporte ocupa todo el ancho */
+  .print-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Asegurar que los bordes y fondos claros se impriman */
+  .print-area .border,
+  .print-area .rounded-md,
+  .print-area .rounded-lg {
+    border-color: #ccc !important;
+  }
+
+  .print-area .bg-muted\/50,
+  .print-area .bg-muted\/30 {
+    background: #f5f5f5 !important;
+  }
+
+  .print-area .bg-card {
+    background: white !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Mapa: asegurar que se vea */
+  .print-area .leaflet-container {
+    max-height: 300px;
+    break-inside: avoid;
+  }
+
+  /* Evitar cortes de página en secciones */
+  .print-area section {
+    break-inside: avoid;
+  }
+
+  /* Texto oscuro para contraste en impresión */
+  .print-area .text-muted-foreground {
+    color: #555 !important;
+  }
+
+  .print-area .text-foreground {
+    color: black !important;
+  }
+}

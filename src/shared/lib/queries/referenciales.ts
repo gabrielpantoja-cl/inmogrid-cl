@@ -371,6 +371,8 @@ export type ComparableRow = {
   monto: string | null;
   predio: string | null;
   rol: string | null;
+  fojas: string | null;
+  numero: number | null;
 };
 
 /**
@@ -431,7 +433,9 @@ export async function queryComparables(params: {
       r."montoUf",
       r.monto::text AS monto,
       r.predio,
-      r.rol
+      r.rol,
+      r.fojas,
+      r.numero
     FROM referenciales r
     WHERE LOWER(r.comuna) = LOWER(${comuna})
       AND r.destino = ${destino}
@@ -465,6 +469,8 @@ export async function queryComparables(params: {
     monto: r.monto as string | null,
     predio: r.predio as string | null,
     rol: r.rol as string | null,
+    fojas: r.fojas as string | null,
+    numero: r.numero as number | null,
   }));
 }
 

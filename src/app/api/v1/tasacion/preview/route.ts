@@ -79,19 +79,24 @@ export async function POST(request: NextRequest) {
     const anioActual = new Date().getFullYear();
     const anioDesde = anioActual - 2;
 
-    // Geocodificar dirección si fue proporcionada
+    // Geocodificar: dirección específica si se proporcionó, sino comuna como fallback.
     let geocodeLat: number | undefined;
     let geocodeLng: number | undefined;
     let geocodeOk = false;
+    let geocodeLabel: string | undefined;
 
-    if (input.direccion) {
-      const query = `${input.direccion}, ${input.comuna}, Chile`;
-      const coords = await geocodeChile(query);
-      if (coords) {
-        geocodeLat = coords.lat;
-        geocodeLng = coords.lng;
-        geocodeOk = true;
-      }
+    const geoQuery = input.direccion
+      ? `${input.direccion}, ${input.comuna}, Chile`
+      : `${input.comuna}, Chile`;
+
+    const coords = await geocodeChile(geoQuery);
+    if (coords) {
+      geocodeLat = coords.lat;
+      geocodeLng = coords.lng;
+      geocodeOk = true;
+      geocodeLabel = input.direccion
+        ? input.direccion
+        : `Centro referencial de ${input.comuna}`;
     }
 
     const comparables = await queryComparables({
@@ -111,14 +116,26 @@ export async function POST(request: NextRequest) {
           error: 'Sin comparables suficientes',
           details: {
             comparablesEncontrados: comparables.length,
-            sugerencia: 'La zona o destino seleccionado no tiene datos de referencia suficientes en los últimos 24 meses. Intenta con una commune cercana o un destino más general.',
+            sugerencia: 'La zona o destino seleccionado no tiene datos de referencia suficientes en los últimos 24 meses. Intenta con una comuna cercana o un destino más general.',
           },
         },
         { status: 422, headers: { ...corsHeaders(), ...rlHeaders } }
       );
     }
 
-    // En el preview anónimo no enviamos los comparables individuales (solo el resumen)
+    // Versión sanitizada de comparables para el preview anónimo:
+    // incluimos fojas, numero, anio, fecha, superficies, monto — sin PII (predio, rol).
+    const comparablesSanitizados = resultado.comparables.map((c) => ({
+      fechaescritura: c.fechaescritura,
+      superficieTerreno: c.superficieTerreno,
+      superficieConstruida: c.superficieConstruida,
+      montoUf: c.montoUf,
+      ufM2: c.ufM2,
+      fojas: c.fojas,
+      numero: c.numero,
+      anio: c.anio,
+    }));
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { comparables: _comps, ...resumenSinComps } = resultado;
 
@@ -128,10 +145,12 @@ export async function POST(request: NextRequest) {
         data: {
           ...resumenSinComps,
           comparablesUsados: resultado.comparablesUsados,
+          comparables: comparablesSanitizados,
+          ...(geocodeOk && { lat: geocodeLat, lng: geocodeLng, geocodeLabel }),
         },
         meta: {
           nota: 'Estimación referencial basada en transacciones reales del Conservador de Bienes Raíces. No reemplaza un peritaje profesional.',
-          ...(geocodeOk && { geocode: { lat: geocodeLat, lng: geocodeLng, radioKm: 3 } }),
+          ...(geocodeOk && { geocode: { lat: geocodeLat, lng: geocodeLng, radioKm: 3, label: geocodeLabel } }),
         },
       },
       { status: 200, headers: { ...corsHeaders(), ...rlHeaders } }

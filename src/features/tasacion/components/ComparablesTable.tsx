@@ -24,23 +24,27 @@ export default function ComparablesTable({ comparables }: Props) {
             <th className="px-3 py-2 text-right font-medium">Sup. m²</th>
             <th className="px-3 py-2 text-right font-medium">Monto (UF)</th>
             <th className="px-3 py-2 text-right font-medium">UF/m²</th>
-            <th className="px-3 py-2 text-left font-medium hidden sm:table-cell">ROL</th>
+            <th className="px-3 py-2 text-left font-medium">Fojas-Nº-Año</th>
           </tr>
         </thead>
         <tbody className="divide-y">
           {comparables.slice(0, 20).map((c) => {
             const sup = c.superficieTerreno ?? c.superficieConstruida ?? 0;
+            const fna =
+              c.fojas || c.numero || c.anio
+                ? [c.fojas, c.numero ? String(c.numero) : null, c.anio ? String(c.anio) : null]
+                    .filter(Boolean)
+                    .join('-')
+                : '—';
             return (
-              <tr key={c.id} className="hover:bg-muted/30">
+              <tr key={`${c.fechaescritura}-${c.fojas ?? ''}-${c.numero ?? c.anio}`} className="hover:bg-muted/30">
                 <td className="px-3 py-2">{c.fechaescritura}</td>
                 <td className="px-3 py-2 text-right">
                   {sup.toLocaleString('es-CL', { maximumFractionDigits: 0 })}
                 </td>
                 <td className="px-3 py-2 text-right">{formatUf(c.montoUf)}</td>
                 <td className="px-3 py-2 text-right font-medium">{formatUfM2(c.ufM2)}</td>
-                <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell">
-                  {c.rol ?? '—'}
-                </td>
+                <td className="px-3 py-2 text-muted-foreground">{fna}</td>
               </tr>
             );
           })}

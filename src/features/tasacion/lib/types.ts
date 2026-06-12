@@ -13,7 +13,7 @@ export interface AppraisalInput {
 }
 
 export interface ComparableUsado {
-  id: string;
+  id?: string;
   anio: number;
   fechaescritura: string;
   superficieTerreno: number | null;
@@ -22,6 +22,8 @@ export interface ComparableUsado {
   ufM2: number;
   predio?: string;
   rol?: string;
+  fojas?: string;
+  numero?: number;
 }
 
 export type NivelConfianza = 'bajo' | 'medio' | 'alto';

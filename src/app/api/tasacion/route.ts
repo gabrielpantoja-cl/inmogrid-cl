@@ -91,19 +91,20 @@ export async function POST(request: NextRequest) {
 
     const anioDesde = new Date().getFullYear() - 2;
 
-    // Geocodificar dirección si fue proporcionada
+    // Geocodificar: dirección específica si se proporcionó, sino comuna como fallback.
     let geocodeLat: number | undefined;
     let geocodeLng: number | undefined;
     let geocodeOk = false;
 
-    if (input.direccion) {
-      const query = `${input.direccion}, ${input.comuna}, Chile`;
-      const coords = await geocodeChile(query);
-      if (coords) {
-        geocodeLat = coords.lat;
-        geocodeLng = coords.lng;
-        geocodeOk = true;
-      }
+    const geoQuery = input.direccion
+      ? `${input.direccion}, ${input.comuna}, Chile`
+      : `${input.comuna}, Chile`;
+
+    const coords = await geocodeChile(geoQuery);
+    if (coords) {
+      geocodeLat = coords.lat;
+      geocodeLng = coords.lng;
+      geocodeOk = true;
     }
 
     const comparables = await queryComparables({

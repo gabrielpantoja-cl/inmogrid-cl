@@ -97,6 +97,8 @@ export function calcularTasacion(
       ufM2,
       predio: c.predio ?? undefined,
       rol: c.rol ?? undefined,
+      fojas: c.fojas ?? undefined,
+      numero: c.numero ?? undefined,
     });
   }
 
