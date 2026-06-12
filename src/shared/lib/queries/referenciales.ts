@@ -360,6 +360,85 @@ export async function queryConservadoresDirectory(): Promise<ConservadorEntry[]>
   }));
 }
 
+export type ComparableRow = {
+  id: string;
+  anio: number;
+  fechaescritura: Date;
+  superficieTerreno: number | null;
+  superficieConstruida: number | null;
+  destino: string | null;
+  montoUf: number | null;
+  monto: string | null;
+  predio: string | null;
+  rol: string | null;
+};
+
+/**
+ * Query referenciales de Neon para alimentar el motor de tasación.
+ * Solo retorna registros con split de superficie y montoUf disponibles.
+ * Radio de superficie: ±50% del valor de referencia del sujeto.
+ * Ventana temporal: últimos 24 meses.
+ */
+export async function queryComparables(params: {
+  comuna: string;
+  destino: string;
+  superficieRef: number;   // m² de referencia (terreno o construida)
+  anioDesde: number;
+  limit?: number;
+}): Promise<ComparableRow[]> {
+  const { comuna, destino, superficieRef, anioDesde, limit = 100 } = params;
+
+  const supMin = superficieRef * 0.5;
+  const supMax = superficieRef * 1.5;
+
+  const sql = getNeonDb();
+
+  // Para destinos de terreno (W, A, B, F) filtramos por superficieTerreno.
+  // Para destinos horizontales (Z, L, O, C, I) y H (mixto) filtramos por la
+  // superficie disponible que corresponda. Como no sabemos cuál prevalece sin
+  // ver el record, filtramos ambas con OR y dejamos que el motor de cálculo
+  // decida cuál usar.
+  const rows = await sql`
+    SELECT
+      r.id,
+      r.anio,
+      r.fechaescritura,
+      r."superficieTerreno",
+      r."superficieConstruida",
+      r.destino,
+      r."montoUf",
+      r.monto::text AS monto,
+      r.predio,
+      r.rol
+    FROM referenciales r
+    WHERE LOWER(r.comuna) = LOWER(${comuna})
+      AND r.destino = ${destino}
+      AND r."montoUf" IS NOT NULL
+      AND r."montoUf" > 0
+      AND r.anio >= ${anioDesde}
+      AND (
+        (r."superficieTerreno" IS NOT NULL AND r."superficieTerreno" BETWEEN ${supMin} AND ${supMax})
+        OR
+        (r."superficieConstruida" IS NOT NULL AND r."superficieConstruida" BETWEEN ${supMin} AND ${supMax})
+      )
+    ORDER BY r.fechaescritura DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((r) => ({
+    id: r.id as string,
+    anio: r.anio as number,
+    fechaescritura: r.fechaescritura as Date,
+    superficieTerreno: r.superficieTerreno as number | null,
+    superficieConstruida: r.superficieConstruida as number | null,
+    destino: r.destino as string | null,
+    montoUf: r.montoUf as number | null,
+    monto: r.monto as string | null,
+    predio: r.predio as string | null,
+    rol: r.rol as string | null,
+  }));
+}
+
 /**
  * Query aggregate stats for the referenciales dataset.
  */
