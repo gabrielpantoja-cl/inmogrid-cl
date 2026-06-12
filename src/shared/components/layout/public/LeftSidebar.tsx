@@ -9,6 +9,7 @@ import {
   DocumentDuplicateIcon,
   CalendarIcon,
   BuildingLibraryIcon,
+  CalculatorIcon,
 } from '@heroicons/react/24/outline';
 import type { ComponentType, SVGProps } from 'react';
 import { useAuth } from '@/shared/hooks/useAuth';
@@ -36,6 +37,7 @@ const PRIMARY: NavItem[] = [
   { href: '/blog', label: 'Blog', icon: DocumentDuplicateIcon },
   { href: '/eventos', label: 'Eventos', icon: CalendarIcon, comingSoon: true },
   { href: '/referenciales', label: 'Mapa', icon: MapIcon },
+  { href: '/tasacion', label: 'Tasación', icon: CalculatorIcon },
   { href: '/directorio', label: 'Directorio', icon: BuildingLibraryIcon },
   // Sofia — desactivada. Para reactivar: (1) descomentar esta línea +
   // las de PublicHeader y sitemap; (2) renombrar en app/:
