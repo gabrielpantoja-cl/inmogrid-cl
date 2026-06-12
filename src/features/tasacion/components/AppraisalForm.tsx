@@ -73,7 +73,7 @@ export default function AppraisalForm({ onSubmit, isLoading }: Props) {
           id="destino"
           value={form.destino ?? 'H'}
           onChange={(e) => set('destino', e.target.value as AppraisalInput['destino'])}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
         >
           {DESTINOS_TASABLES.map((code) => (
             <option key={code} value={code}>
@@ -147,7 +147,7 @@ export default function AppraisalForm({ onSubmit, isLoading }: Props) {
             onChange={(e) =>
               set('estadoConservacion', e.target.value as AppraisalInput['estadoConservacion'])
             }
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             {Object.entries(CONSERVATION_LABELS).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
@@ -164,7 +164,7 @@ export default function AppraisalForm({ onSubmit, isLoading }: Props) {
             id="calidad"
             value={form.calidad ?? 'MEDIUM'}
             onChange={(e) => set('calidad', e.target.value as AppraisalInput['calidad'])}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             {Object.entries(QUALITY_LABELS).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
@@ -183,7 +183,7 @@ export default function AppraisalForm({ onSubmit, isLoading }: Props) {
                 e.target.value ? (e.target.value as AppraisalInput['disposicion']) : undefined
               )
             }
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">No especificar</option>
             {Object.entries(DISPOSITION_LABELS).map(([key, label]) => (
