@@ -385,11 +385,33 @@ export async function queryComparables(params: {
   superficieRef: number;   // m² de referencia (terreno o construida)
   anioDesde: number;
   limit?: number;
+  /** Coordenadas del inmueble a tasar para filtro de proximidad espacial (opcional) */
+  lat?: number;
+  lng?: number;
+  /** Radio de búsqueda en kilómetros (default 3) */
+  radioKm?: number;
 }): Promise<ComparableRow[]> {
-  const { comuna, destino, superficieRef, anioDesde, limit = 100 } = params;
+  const { comuna, destino, superficieRef, anioDesde, limit = 100, lat, lng, radioKm = 3 } = params;
 
   const supMin = superficieRef * 0.5;
   const supMax = superficieRef * 1.5;
+
+  // Bounding box para filtro de proximidad espacial (opcional)
+  const hasCoords = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng);
+  let minLat: number | null = null;
+  let maxLat: number | null = null;
+  let minLng: number | null = null;
+  let maxLng: number | null = null;
+
+  if (hasCoords) {
+    const latRad = (lat! * Math.PI) / 180;
+    const deltaLat = radioKm / 111.32;
+    const deltaLng = radioKm / (111.32 * Math.cos(latRad));
+    minLat = lat! - deltaLat;
+    maxLat = lat! + deltaLat;
+    minLng = lng! - deltaLng;
+    maxLng = lng! + deltaLng;
+  }
 
   const sql = getNeonDb();
 
@@ -420,6 +442,13 @@ export async function queryComparables(params: {
         (r."superficieTerreno" IS NOT NULL AND r."superficieTerreno" BETWEEN ${supMin} AND ${supMax})
         OR
         (r."superficieConstruida" IS NOT NULL AND r."superficieConstruida" BETWEEN ${supMin} AND ${supMax})
+      )
+      AND (
+        ${minLng}::float8 IS NULL
+        OR (
+          COALESCE(ST_X(r.geom), r.lng) BETWEEN ${minLng ?? null} AND ${maxLng ?? null}
+          AND COALESCE(ST_Y(r.geom), r.lat) BETWEEN ${minLat ?? null} AND ${maxLat ?? null}
+        )
       )
     ORDER BY r.fechaescritura DESC
     LIMIT ${limit}

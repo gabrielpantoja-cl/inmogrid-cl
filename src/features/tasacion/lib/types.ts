@@ -3,6 +3,7 @@ import type { ConservationStateType, QualityType, DispositionType } from './coef
 export interface AppraisalInput {
   comuna: string;
   destino: string;
+  direccion?: string;
   superficieTerreno?: number;
   superficieConstruida?: number;
   anoConstruccion?: number;

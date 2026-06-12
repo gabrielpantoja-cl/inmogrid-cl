@@ -390,6 +390,7 @@ model Appraisal {
   // Inputs del usuario
   comuna               String
   destino              String    // Código SII (H, W, C, I, O, etc.)
+  direccion            String?   // Dirección del inmueble (opcional)
   superficieTerreno    Float?    @map("superficie_terreno")
   superficieConstruida Float?    @map("superficie_construida")
   anoConstruccion      Int?      @map("ano_construccion")

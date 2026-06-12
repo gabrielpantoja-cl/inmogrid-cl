@@ -9,9 +9,30 @@ export async function OPTIONS() {
   return handleOptions();
 }
 
+/**
+ * Geocodifica una dirección en Chile usando Nominatim (OpenStreetMap).
+ * Retorna { lat, lng } o null si no hay resultados.
+ */
+async function geocodeChile(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cl&limit=1&accept-language=es`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'inmogrid.cl/1.0 (tasacion)' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 const PreviewSchema = z.object({
   comuna: z.string().min(2).max(100),
   destino: z.enum(['H', 'W', 'C', 'O', 'Z', 'L', 'I', 'A', 'B', 'F']),
+  direccion: z.string().max(200).optional(),
   superficieTerreno: z.number().positive().max(1_000_000).optional(),
   superficieConstruida: z.number().positive().max(100_000).optional(),
   anoConstruccion: z.number().min(1900).max(new Date().getFullYear()).optional(),
@@ -58,11 +79,27 @@ export async function POST(request: NextRequest) {
     const anioActual = new Date().getFullYear();
     const anioDesde = anioActual - 2;
 
+    // Geocodificar dirección si fue proporcionada
+    let geocodeLat: number | undefined;
+    let geocodeLng: number | undefined;
+    let geocodeOk = false;
+
+    if (input.direccion) {
+      const query = `${input.direccion}, ${input.comuna}, Chile`;
+      const coords = await geocodeChile(query);
+      if (coords) {
+        geocodeLat = coords.lat;
+        geocodeLng = coords.lng;
+        geocodeOk = true;
+      }
+    }
+
     const comparables = await queryComparables({
       comuna: input.comuna,
       destino: input.destino,
       superficieRef,
       anioDesde,
+      ...(geocodeOk && { lat: geocodeLat, lng: geocodeLng, radioKm: 3 }),
     });
 
     const resultado = calcularTasacion(input, comparables);
@@ -94,6 +131,7 @@ export async function POST(request: NextRequest) {
         },
         meta: {
           nota: 'Estimación referencial basada en transacciones reales del Conservador de Bienes Raíces. No reemplaza un peritaje profesional.',
+          ...(geocodeOk && { geocode: { lat: geocodeLat, lng: geocodeLng, radioKm: 3 } }),
         },
       },
       { status: 200, headers: { ...corsHeaders(), ...rlHeaders } }

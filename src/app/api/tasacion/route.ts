@@ -5,9 +5,26 @@ import prisma from '@/shared/lib/prisma';
 import { queryComparables } from '@/shared/lib/queries/referenciales';
 import { calcularTasacion } from '@/features/tasacion/lib/calculator';
 
+async function geocodeChile(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cl&limit=1&accept-language=es`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'inmogrid.cl/1.0 (tasacion)' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
+
 const AppraisalInputSchema = z.object({
   comuna: z.string().min(2).max(100),
   destino: z.enum(['H', 'W', 'C', 'O', 'Z', 'L', 'I', 'A', 'B', 'F']),
+  direccion: z.string().max(200).optional(),
   superficieTerreno: z.number().positive().max(1_000_000).optional(),
   superficieConstruida: z.number().positive().max(100_000).optional(),
   anoConstruccion: z.number().min(1900).max(new Date().getFullYear()).optional(),
@@ -73,11 +90,28 @@ export async function POST(request: NextRequest) {
     }
 
     const anioDesde = new Date().getFullYear() - 2;
+
+    // Geocodificar dirección si fue proporcionada
+    let geocodeLat: number | undefined;
+    let geocodeLng: number | undefined;
+    let geocodeOk = false;
+
+    if (input.direccion) {
+      const query = `${input.direccion}, ${input.comuna}, Chile`;
+      const coords = await geocodeChile(query);
+      if (coords) {
+        geocodeLat = coords.lat;
+        geocodeLng = coords.lng;
+        geocodeOk = true;
+      }
+    }
+
     const comparables = await queryComparables({
       comuna: input.comuna,
       destino: input.destino,
       superficieRef,
       anioDesde,
+      ...(geocodeOk && { lat: geocodeLat, lng: geocodeLng, radioKm: 3 }),
     });
 
     const resultado = calcularTasacion(input, comparables);
@@ -97,6 +131,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         comuna: input.comuna,
         destino: input.destino,
+        direccion: input.direccion,
         superficieTerreno: input.superficieTerreno,
         superficieConstruida: input.superficieConstruida,
         anoConstruccion: input.anoConstruccion,

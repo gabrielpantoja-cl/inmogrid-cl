@@ -48,6 +48,24 @@ export default function AppraisalForm({ onSubmit, isLoading }: Props) {
         />
       </div>
 
+      {/* Dirección (opcional) */}
+      <div className="space-y-1.5">
+        <Label htmlFor="direccion">
+          Dirección
+          <span className="ml-1 text-muted-foreground">(opcional — calle y número)</span>
+        </Label>
+        <Input
+          id="direccion"
+          type="text"
+          placeholder="Ej: Av. Providencia 1234, depto 501"
+          value={form.direccion ?? ''}
+          onChange={(e) => set('direccion', e.target.value || undefined)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Permite buscar comparables más cercanos geográficamente. Sin dirección se usa toda la comuna.
+        </p>
+      </div>
+
       {/* Destino (tipo de propiedad) */}
       <div className="space-y-1.5">
         <Label htmlFor="destino">Tipo de propiedad</Label>

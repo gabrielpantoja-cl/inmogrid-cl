@@ -95,7 +95,7 @@ export default function AppraisalResult({ resultado, input, onReset }: Props) {
       </div>
 
       {/* Comparables */}
-      {resultado.comparables.length > 0 && (
+      {resultado.comparables?.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Transacciones comparables usadas</h3>
           <ComparablesTable comparables={resultado.comparables} />

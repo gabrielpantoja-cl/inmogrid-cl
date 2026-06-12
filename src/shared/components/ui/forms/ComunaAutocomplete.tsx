@@ -125,14 +125,14 @@ export default function ComunaAutocomplete({
         onBlur={handleBlur}
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full ${className}`}
+        className={`flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
         autoComplete="off"
       />
       
       {isOpen && suggestions.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-[70] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-[70] w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
         >
           {suggestions.map((comuna, index) => (
             <li key={`${comuna.codigo}-${comuna.nombre}`}>
@@ -141,13 +141,13 @@ export default function ComunaAutocomplete({
                 role="option"
                 aria-selected={index === highlightedIndex}
                 onClick={() => handleSuggestionClick(comuna)}
-                className={`w-full text-left px-3 py-2 cursor-pointer hover:bg-primary/10 border-b border-gray-100 last:border-b-0 ${
+                className={`w-full text-left px-3 py-2 cursor-pointer hover:bg-primary/10 border-b border-border last:border-b-0 ${
                   index === highlightedIndex ? 'bg-primary/20' : ''
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-900">{comuna.nombre}</span>
-                  <span className="text-sm text-gray-500">{comuna.region}</span>
+                  <span className="font-medium text-foreground">{comuna.nombre}</span>
+                  <span className="text-sm text-muted-foreground">{comuna.region}</span>
                 </div>
               </button>
             </li>
@@ -156,8 +156,8 @@ export default function ComunaAutocomplete({
       )}
       
       {isOpen && inputValue.length > 0 && suggestions.length === 0 && (
-        <div className="absolute z-[70] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-3">
-          <div className="text-gray-500 text-sm">
+        <div className="absolute z-[70] w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+          <div className="text-muted-foreground text-sm">
             No se encontraron comunas que coincidan con &quot;{inputValue}&quot;
           </div>
         </div>
